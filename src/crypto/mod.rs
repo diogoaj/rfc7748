@@ -15,7 +15,7 @@ impl Curve25519{
 		Curve25519{ 
 			a: Integer::from(486662), 
 			b: Integer::from(1),
-			prime: Integer::from(Integer::u_pow_u(2, 252)) + Integer::from("27742317777372353535851937790883648493".parse::<Integer>().unwrap()), 
+			prime: Integer::from(Integer::u_pow_u(2, 255)) - Integer::from(19), 
 		}
 	}
 }
