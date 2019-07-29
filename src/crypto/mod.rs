@@ -34,6 +34,37 @@ impl Point{
 	}
 }
 
+// From RFC 7748 - Elliptic Curves for Security
+// Nedds tests
+// ============================================
+
+pub fn decode_little_endian(b: &[u8], bits: u32) -> Integer{
+	let mut sum = Integer::from(0);;
+	for i in 0..(bits+7)/8 {
+		sum += Integer::from(b[i as usize]) << 8*i;
+	}
+
+	return sum;
+}
+
+pub fn decode_u_coordinate(u: &mut [u8], bits: u32) -> Integer{
+	if bits % 8 == 0{
+		u[u.len()-1] &= (1<<(bits%8))-1
+	}
+	return decode_little_endian(u, bits);
+}
+
+pub fn encode_u_coordinate(u: &Integer, bits: u32) -> Vec<u8>{
+	let mut arr = vec![0; (bits as usize + 7)/8];
+	//u = u % self.prime;
+
+	for i in 0..arr.len(){
+		arr[i] = (Integer::from(u >> 8*i as u32) & Integer::from(0xff)).to_u8().unwrap();
+	}
+
+	return arr;
+}
+// ============================================
 
 impl Curve25519{
 	pub fn new() -> Curve25519{
