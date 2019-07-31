@@ -1,6 +1,5 @@
 use rug::Integer;
 use rug::ops::Pow;
-use std::cmp::Ordering;
 
 // Montgomery Curve
 // y^2 = x^3 + 486662x^2 + x mod 2^255 - 19
@@ -9,6 +8,18 @@ pub struct Curve25519{
 	pub b: Integer,
 	pub prime: Integer,
 	pub base: Point,
+}
+
+impl Curve25519{
+	pub fn new() -> Curve25519{
+		Curve25519{ 
+			a: Integer::from(486662), 
+			b: Integer::from(1),
+			prime: Integer::from(Integer::u_pow_u(2, 255)) - Integer::from(19), 
+			base: Point::new(Integer::from(9), 
+				             Integer::from("14781619447589544791020593568409986887264606134616475288964881837755586237401".parse::<Integer>().unwrap())),
+		}
+	}
 }
 
 #[derive(Clone)]
@@ -35,10 +46,8 @@ impl Point{
 }
 
 // From RFC 7748 - Elliptic Curves for Security
-// Nedds tests
 // ============================================
-
-pub fn decode_little_endian(b: &[u8], bits: u32) -> Integer{
+pub fn decode_little_endian(b: &Vec<u8>, bits: u32) -> Integer{
 	let mut sum = Integer::from(0);;
 	for i in 0..(bits+7)/8 {
 		sum += Integer::from(b[i as usize]) << 8*i;
@@ -47,16 +56,22 @@ pub fn decode_little_endian(b: &[u8], bits: u32) -> Integer{
 	return sum;
 }
 
-pub fn decode_u_coordinate(u: &mut [u8], bits: u32) -> Integer{
+pub fn decode_u_coordinate(u: &mut Vec<u8>, bits: u32) -> Integer{
+	let size = u.len() - 1;
 	if bits % 8 == 0{
-		u[u.len()-1] &= (1<<(bits%8))-1
+		u[size] &= (1<<(bits%8))-1
 	}
 	return decode_little_endian(u, bits);
 }
 
-pub fn encode_u_coordinate(u: &Integer, bits: u32) -> Vec<u8>{
+pub fn encode_u_coordinate(u: &mut Integer, bits: u32) -> Vec<u8>{
+	let prime = Integer::from(2).pow(255) - 19;
 	let mut arr = vec![0; (bits as usize + 7)/8];
-	//u = u % self.prime;
+
+	let r = u.div_rem_floor_ref(&prime);
+	let (_, u) = <(Integer, Integer)>::from(r);     
+
+	let u = &Integer::from(u);
 
 	for i in 0..arr.len(){
 		arr[i] = (Integer::from(u >> 8*i as u32) & Integer::from(0xff)).to_u8().unwrap();
@@ -64,123 +79,76 @@ pub fn encode_u_coordinate(u: &Integer, bits: u32) -> Vec<u8>{
 
 	return arr;
 }
-// ============================================
 
-impl Curve25519{
-	pub fn new() -> Curve25519{
-		Curve25519{ 
-			a: Integer::from(486662), 
-			b: Integer::from(1),
-			prime: Integer::from(Integer::u_pow_u(2, 255)) - Integer::from(19), 
-			base: Point::new(Integer::from(9), 
-							Integer::from("14781619447589544791020593568409986887264606134616475288964881837755586237401".parse::<Integer>().unwrap())),
-		}
+pub fn decode_scalar_25519(k: &mut Vec<u8>) -> Integer{
+	k[0] &= 248;
+	k[31] &= 127;
+	k[31] |= 64;
+
+	return decode_little_endian(k, 255);
+}
+
+pub fn cswap(swap: &Integer, x_2: &Integer, x_3: &Integer) -> (Integer, Integer) {
+	let mask = Integer::from(0 - swap);
+
+	let dummy = mask & Integer::from(x_2^x_3);
+
+	let xx_2 = Integer::from(x_2^&dummy);
+	let xx_3 = Integer::from(x_3^&dummy);
+	
+	return (xx_2, xx_3)
+}
+
+pub fn x25519(k: &mut Vec<u8>, u: &mut Vec<u8>) -> Integer {
+	let kk = decode_scalar_25519(k);
+	let uu = decode_u_coordinate(u, 255);
+
+	let a24 = Integer::from(121665);  
+	let p = Integer::from(2).pow(255) - Integer::from(19);
+
+	let x_1 = uu.clone();
+	let mut x_2 = Integer::from(1);
+	let mut z_2 = Integer::from(0);
+	let mut x_3 = uu.clone();
+	let mut z_3 = Integer::from(1);
+	let mut swap = Integer::from(0);
+
+	for t in (0..255).rev(){
+		let k_t = Integer::from(&kk >> t) & Integer::from(1);
+
+		swap = Integer::from(&swap ^ &k_t);
+
+		let (tx_2, tx_3) = cswap(&swap, &x_2, &x_3);
+		let (tz_2, tz_3) = cswap(&swap, &z_2, &z_3);
+
+		x_2 = tx_2;
+		x_3 = tx_3;
+		z_2 = tz_2;
+		z_3 = tz_3;
+
+		swap = k_t;
+
+		let a = Integer::from(&x_2 + &z_2);
+		let aa = Integer::from(a.square_ref()) % &p;
+		let b = Integer::from(&x_2 - &z_2) ;
+		let bb = Integer::from(b.square_ref()) % &p;
+		let e = Integer::from(&aa - &bb);
+		let c = Integer::from(&x_3 + &z_3);
+		let d = Integer::from(&x_3 - &z_3);
+		let da = Integer::from(&d * &a);
+		let cb = Integer::from(&c * &b);
+
+		x_3 = Integer::from(Integer::from(&da + &cb).square_ref()) % &p;
+		z_3 = (&x_1*Integer::from(Integer::from(&da - &cb).square_ref())) % &p;
+		x_2 = Integer::from(&aa * &bb);
+		z_2 = &e*Integer::from(&aa + &a24 * &e);
 	}
 
-	// From https://en.wikipedia.org/wiki/Montgomery_curve#Addition
-	pub fn point_add(&self, p1: &Point, p2: &Point) -> Point{
-		if p1.get_x().cmp0() == Ordering::Equal &&
-		   p1.get_y().cmp0() == Ordering::Equal{
-		   return Point::new(Integer::from(p2.get_x()), Integer::from(p2.get_y()));
-		}
-	   else if p2.get_x().cmp0() == Ordering::Equal &&
-	           p2.get_y().cmp0() == Ordering::Equal{
-		   return Point::new(Integer::from(p1.get_x()), Integer::from(p1.get_y()));
-		}
+	let (tx_2, _) = cswap(&swap, &x_2, &x_3);
+	let (tz_2, _) = cswap(&swap, &z_2, &z_3);
 
-		// Calculate x3 coordinate
-		let mut num = Integer::from(p2.get_y() - p1.get_y()).square();
-		let mut den = Integer::from(p2.get_x() - p1.get_x()).square();
-		let mut inv = den.invert(&self.prime).unwrap();
+	x_2 = tx_2;
+	z_2 = tz_2;
 
-		let mut dividend = num*inv;
-		dividend = dividend - &self.a - p1.get_x() - p2.get_x();
-		let mut r = dividend.div_rem_floor_ref(&self.prime); // Mod operation
-		let (_, x3) = <(Integer, Integer)>::from(r);         // Get remainder
-
-		// Calcualte y3 coordinate
-		num = (Integer::from(2*p1.get_x() + p2.get_x()) + &self.a)*Integer::from(p2.get_y() - p1.get_y());
-		inv = Integer::from(Integer::from(p2.get_x() - p1.get_x()).invert_ref(&self.prime).unwrap());
-
-		let tmp1 = num*inv;
-
-		num = Integer::from(p2.get_y() - p1.get_y()).pow(3);
-		den = Integer::from(p2.get_x() - p1.get_x()).pow(3);
-		inv = den.invert(&self.prime).unwrap();
-
-		let tmp2 = num*inv;
-		dividend = Integer::from(tmp1 - tmp2 - p1.get_y());
-		r = dividend.div_rem_floor_ref(&self.prime); // Mod operation
-		let (_, y3) = <(Integer, Integer)>::from(r); // Get remainder
-
-		return Point::new(x3, y3);		
-	}
-
-	// From https://en.wikipedia.org/wiki/Montgomery_curve#Doubling
-	pub fn point_double(&self, p: &Point) -> Point{
-		if p.get_x().cmp0() == Ordering::Equal &&
-		   p.get_y().cmp0() == Ordering::Equal{
-		   	return Point::new(Integer::from(0), Integer::from(0));
-		   }
-
-		// Calculate slope l
-		let num = 3*Integer::from(p.get_x().pow(2)) + 
-			          Integer::from(2*&self.a)*p.get_x() + 
-			          1;
-
-		let den = Integer::from(2*p.get_y());
-		let inv = den.invert(&self.prime).unwrap();
-		let mut dividend = Integer::from(num*inv);
-
-		let mut r = dividend.div_rem_floor_ref(&self.prime);
-		let (_, l) = <(Integer, Integer)>::from(r);
-
-		let slope = &l;
-
-		// Calculate x3 coordinate
-		dividend = Integer::from(slope.pow(2)) - 
-		           &self.a - 
-		           2*p.get_x();
-
-		r = dividend.div_rem_floor_ref(&self.prime);
-		let (_, x3) = <(Integer, Integer)>::from(r);
-
-		// Calculate y3 coordinate
-		dividend = Integer::from(3*p.get_x() + &self.a)*slope - 
-		           Integer::from(slope.pow(3)) - 
-		           p.get_y();
-
-		r = dividend.div_rem_floor_ref(&self.prime);
-		let (_, y3) = <(Integer, Integer)>::from(r);
-
-		return Point::new(x3, y3);
-	}
-
-	// From https://en.wikipedia.org/wiki/Elliptic_curve_point_multiplication#Montgomery_ladder
-	pub fn montgomery_ladder(&self, p: &Point, m: Integer) -> Point{
-		let mut r0 = &Point::new(Integer::from(0), Integer::from(0));
-		let mut r1 = p;
-		let mut tmp3;
-		let mut tmp4;
-
-		let bits = m.significant_bits() - 1;
-		let mut counter = bits as i32;
-
-		while counter >= 0{
-			if m.get_bit(counter as u32) == false{
-				tmp3 = self.point_add(&r0, &r1);
-				r1 = &tmp3;
-				tmp4 = self.point_double(&r0);
-				r0 = &tmp4;
-			}else{
-				tmp4 = self.point_add(&r0, &r1);
-				r0 = &tmp4;
-				tmp3 = self.point_double(&r1);
-				r1 = &tmp3;
-			}
-			counter = counter - 1;
-		}
-
-		return Point::new(Integer::from(r0.get_x()), Integer::from(r0.get_y()));
-	}
+	return (x_2 * (z_2.pow_mod(&Integer::from(&p-2), &p).unwrap())) % p;
 }
