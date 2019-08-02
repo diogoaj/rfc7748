@@ -1,7 +1,6 @@
 use rug::Integer;
 use rug::ops::Pow;
 
-
 // Montgomery Curve
 // y^2 = x^3 + 486662x^2 + x mod 2^255 - 19
 pub struct Curve25519{
@@ -31,8 +30,8 @@ impl Curve25519{
 	}
 
 	pub fn decode_u_coordinate(&self, u: &mut Vec<u8>, bits: u32) -> Integer{
-		let size = u.len() - 1;
-		if bits % 8 == 0{
+		if bits % 8 != 0{
+			let size = u.len() - 1;
 			u[size] &= (1<<(bits%8))-1;
 		}
 		return self.decode_little_endian(u, bits);
