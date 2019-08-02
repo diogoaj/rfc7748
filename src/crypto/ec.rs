@@ -1,33 +1,6 @@
 use rug::Integer;
 use rug::ops::Pow;
 
-pub struct KeyPair{
-	public_key: Vec<u8>,
-	private_key: Vec<u8>,
-}
-
-impl KeyPair{
-	/*
-	pub fn new() -> KeyPair{
-		KeyPair{
-			// TODO: generate 32 bytes for private key
-			// and generate public key
-		}
-	}*/
-
-	pub fn get_public_key(&self) -> &Vec<u8>{
-		return &self.public_key;
-	}
-
-	pub fn get_private_key(&self) -> &Vec<u8>{
-		return &self.private_key;
-	}
-
-	pub fn dh_exchange(&self, curve: &Curve25519, private_key: &Vec<u8>) -> Vec<u8>{
-		return curve.scalar_multiply(self.get_private_key(), private_key);
-	}
-}
-
 
 // Montgomery Curve
 // y^2 = x^3 + 486662x^2 + x mod 2^255 - 19
@@ -92,11 +65,8 @@ impl Curve25519{
 		let mask = Integer::from(0 - swap);
 
 		let dummy = mask & Integer::from(x_2^x_3);
-
-		let xx_2 = Integer::from(x_2^&dummy);
-		let xx_3 = Integer::from(x_3^&dummy);
 		
-		return (xx_2, xx_3)
+		return (Integer::from(x_2^&dummy), Integer::from(x_3^&dummy))
 	}
 
 	pub fn scalar_multiply(&self, k: &Vec<u8>, u: &Vec<u8>) -> Vec<u8> {

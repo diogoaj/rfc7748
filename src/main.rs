@@ -1,16 +1,19 @@
 mod crypto;
 
-use rug::Integer;
+use ring::rand::SystemRandom;
+use ring::rand::SecureRandom;
 
 fn main(){
 	let curve = crypto::ec::Curve25519::new();
-	let mut k = hex::decode("0900000000000000000000000000000000000000000000000000000000000000").unwrap();
-	let mut u = hex::decode("0900000000000000000000000000000000000000000000000000000000000000").unwrap();
-	let mut r;
+	let rng = SystemRandom::new();
 
-	// Second iteration test ( 1000 iterations )
-	// TODO: implement test module
+	// Test dh exchange
 
-	r = curve.scalar_multiply(&mut k, &mut u);
-	println!("{}", hex::encode(r));
+	let alice_kp = crypto::ecdh::KeyPair::new(&curve, &rng);
+	let bob_kp = crypto::ecdh::KeyPair::new(&curve, &rng);
+
+	let alice_shared_key = alice_kp.dh_exchange(&curve, bob_kp.get_public_key());
+	let bob_shared_key = bob_kp.dh_exchange(&curve, alice_kp.get_public_key());
+
+	println!("{}", alice_shared_key == bob_shared_key);
 }
