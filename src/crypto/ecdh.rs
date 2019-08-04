@@ -22,6 +22,16 @@ impl KeyPair{
 		}
 	}
 
+	pub fn new_test(curve: &Curve25519, private_key: Vec<u8>) -> KeyPair{
+		let u_coordinate = hex::decode("0900000000000000000000000000000000000000000000000000000000000000").unwrap();
+		let public = curve.scalar_multiply(&private_key, &u_coordinate);
+
+		KeyPair{
+			private_key: private_key,
+			public_key: public,
+		}
+	}
+
 	pub fn get_public_key(&self) -> &Vec<u8>{
 		return &self.public_key;
 	}
