@@ -32,7 +32,7 @@ impl Curve25519{
 	pub fn decode_u_coordinate(&self, u: &mut Vec<u8>, bits: u32) -> Integer{
 		if bits % 8 != 0{
 			let size = u.len() - 1;
-			u[size] &= (1<<(bits%8))-1;
+			u[size] &= (1<<(bits % 8))-1;
 		}
 		return self.decode_little_endian(u, bits);
 	}
@@ -46,7 +46,8 @@ impl Curve25519{
 		let u = &Integer::from(u);
 
 		for i in 0..arr.len(){
-			arr[i] = (Integer::from(u >> 8*i as u32) & Integer::from(0xff)).to_u8().unwrap();
+			arr[i] = (Integer::from(u >> 8*i as u32) & Integer::from(0xff)).to_u8()
+					.unwrap();
 		}
 
 		return arr;
@@ -61,7 +62,7 @@ impl Curve25519{
 	}
 
 	pub fn cswap(&self, swap: &Integer, x_2: &Integer, x_3: &Integer) -> (Integer, Integer) {
-		let mask = Integer::from(0 - swap);
+		let mask = Integer::from(0) - swap;
 
 		let dummy = mask & Integer::from(x_2^x_3);
 		
@@ -103,17 +104,23 @@ impl Curve25519{
 			let two = Integer::from(2);
 
 			let a = Integer::from(&x_2 + &z_2);
-			let aa = Integer::from(a.pow_mod_ref(&two, &self.prime).unwrap());
+			let aa = Integer::from(a.pow_mod_ref(&two, &self.prime)
+					.unwrap());
 			let b = Integer::from(&x_2 - &z_2);
-			let bb = Integer::from(b.pow_mod_ref(&two, &self.prime).unwrap());
+			let bb = Integer::from(b.pow_mod_ref(&two, &self.prime)
+					.unwrap());
 			let e = Integer::from(&aa - &bb);
 			let c = Integer::from(&x_3 + &z_3);
 			let d = Integer::from(&x_3 - &z_3);
 			let da = Integer::from(&d * &a);
 			let cb = Integer::from(&c * &b);
 
-			x_3 = Integer::from(Integer::from(&da + &cb).pow_mod_ref(&two, &self.prime).unwrap());
-			z_3 = &x_1*Integer::from(Integer::from(&da - &cb).pow_mod_ref(&two, &self.prime).unwrap());
+			x_3 = Integer::from(Integer::from(&da + &cb)
+				.pow_mod_ref(&two, &self.prime)
+				.unwrap());
+			z_3 = &x_1*Integer::from(Integer::from(&da - &cb)
+				.pow_mod_ref(&two, &self.prime)
+				.unwrap());
 			x_2 = Integer::from(&aa * &bb);
 			z_2 = &e*Integer::from(&aa + &a24 * &e);
 		}

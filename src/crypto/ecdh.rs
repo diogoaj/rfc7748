@@ -9,7 +9,9 @@ pub struct KeyPair{
 
 impl KeyPair{
 	pub fn new(curve: &Curve25519, rng: &SystemRandom) -> KeyPair{
-		let u_coordinate = hex::decode("0900000000000000000000000000000000000000000000000000000000000000").unwrap();
+		let u_coordinate =
+			hex::decode("0900000000000000000000000000000000000000000000000000000000000000")
+			.unwrap();
 		let mut private = vec![0; 32];
 
 		rng.fill(&mut private).unwrap();
@@ -23,7 +25,9 @@ impl KeyPair{
 	}
 
 	pub fn new_test(curve: &Curve25519, private_key: Vec<u8>) -> KeyPair{
-		let u_coordinate = hex::decode("0900000000000000000000000000000000000000000000000000000000000000").unwrap();
+		let u_coordinate = 
+			hex::decode("0900000000000000000000000000000000000000000000000000000000000000")
+			.unwrap();
 		let public = curve.scalar_multiply(&private_key, &u_coordinate);
 
 		KeyPair{

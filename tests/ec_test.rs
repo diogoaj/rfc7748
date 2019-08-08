@@ -13,8 +13,14 @@ mod tests{
 		let scalar2 = "4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d";
 		let mut scalar2_bytes = hex::decode(scalar2).unwrap();
 
-		let res1 = rug::Integer::from("31029842492115040904895560451863089656472772604678260265531221036453811406496".parse::<rug::Integer>().unwrap());
-		let res2 = rug::Integer::from("35156891815674817266734212754503633747128614016119564763269015315466259359304".parse::<rug::Integer>().unwrap());
+		let res1 = 
+			rug::Integer::from("31029842492115040904895560451863089656472772604678260265531221036453811406496"
+			.parse::<rug::Integer>()
+			.unwrap());
+		let res2 = 
+			rug::Integer::from("35156891815674817266734212754503633747128614016119564763269015315466259359304"
+			.parse::<rug::Integer>()
+			.unwrap());
 
 	    assert_eq!(curve.decode_scalar_25519(&mut scalar1_bytes), res1);
 	    assert_eq!(curve.decode_scalar_25519(&mut scalar2_bytes), res2);
@@ -29,8 +35,14 @@ mod tests{
 		let coordinate2 = "e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493";
 		let mut coordinate2_bytes = hex::decode(coordinate2).unwrap();
 
-		let res1 = rug::Integer::from("34426434033919594451155107781188821651316167215306631574996226621102155684838".parse::<rug::Integer>().unwrap());
-		let res2 = rug::Integer::from("8883857351183929894090759386610649319417338800022198945255395922347792736741".parse::<rug::Integer>().unwrap());
+		let res1 = 
+			rug::Integer::from("34426434033919594451155107781188821651316167215306631574996226621102155684838"
+			.parse::<rug::Integer>()
+			.unwrap());
+		let res2 = 
+			rug::Integer::from("8883857351183929894090759386610649319417338800022198945255395922347792736741"
+			.parse::<rug::Integer>()
+			.unwrap());
 
 	    assert_eq!(curve.decode_u_coordinate(&mut coordinate1_bytes, 255), res1);
 	    assert_eq!(curve.decode_u_coordinate(&mut coordinate2_bytes, 255), res2);
@@ -62,11 +74,19 @@ mod tests{
 	#[ignore]
 	fn scalar_multiply_iteration_test(){
 		let curve = ecc::crypto::ec::Curve25519::new();
-		let iteration1 = hex::decode("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079").unwrap();
-		let iteration1000 = hex::decode("684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51").unwrap();
-		let iteration1000000 = hex::decode("7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424").unwrap();
+		let iteration1 = 
+			hex::decode("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079")
+			.unwrap();
+		let iteration1000 = 
+			hex::decode("684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51")
+			.unwrap();
+		let iteration1000000 = 
+			hex::decode("7c3911e0ab2586fd864497297e575e6f3bc601c0883c30df5f4dd2d24f665424")
+			.unwrap();
 		
-		let mut k = hex::decode("0900000000000000000000000000000000000000000000000000000000000000").unwrap();
+		let mut k = 
+			hex::decode("0900000000000000000000000000000000000000000000000000000000000000")
+			.unwrap();
 		let mut u = k.clone();
 		let mut r;
 
