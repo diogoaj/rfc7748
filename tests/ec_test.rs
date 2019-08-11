@@ -1,4 +1,4 @@
-extern crate ecc;
+extern crate rfc7748;
 extern crate rug;
 
 #[cfg(test)]
@@ -6,7 +6,7 @@ extern crate rug;
 mod tests{
 	#[test]
 	fn decode_scalar_test() {
-		let curve = ecc::crypto::ec::Curve25519::new();
+		let curve = rfc7748::crypto::ec::Curve25519::new();
 		let scalar1 = "a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4";
 		let mut scalar1_bytes = hex::decode(scalar1).unwrap();
 
@@ -28,7 +28,7 @@ mod tests{
 
 	#[test]
 	fn decode_coordinate_test() {
-		let curve = ecc::crypto::ec::Curve25519::new();
+		let curve = rfc7748::crypto::ec::Curve25519::new();
 		let coordinate1 = "e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c";
 		let mut coordinate1_bytes = hex::decode(coordinate1).unwrap();
 
@@ -50,7 +50,7 @@ mod tests{
 
 	#[test]
 	fn scalar_multiply_test(){
-		let curve = ecc::crypto::ec::Curve25519::new();
+		let curve = rfc7748::crypto::ec::Curve25519::new();
 		let scalar1 = "a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4";
 		let scalar2 = "4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d";
 		let coordinate1 = "e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c";
@@ -73,7 +73,7 @@ mod tests{
 	#[test]
 	#[ignore]
 	fn scalar_multiply_iteration_test(){
-		let curve = ecc::crypto::ec::Curve25519::new();
+		let curve = rfc7748::crypto::ec::Curve25519::new();
 		let iteration1 = 
 			hex::decode("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079")
 			.unwrap();
